@@ -1,0 +1,241 @@
+version: "3.6"
+services:
+  db: 
+    image: mariadb:{{ MARIADB.VERSION }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ MARIADB.RESOURCE_LIMITS.CPU }}"
+          memory: {{ MARIADB.RESOURCE_LIMITS.MEM }}
+    environment:
+      - MYSQL_ROOT_PASSWORD_FILE={{ MARIADB.ROOT_PASSWORD_FILE }}
+    volumes:
+      - {{ MARIADB.VOLUME_HOST_PATH }}/data:/var/lib/mysql
+      - {{ MARIADB.VOLUME_HOST_PATH }}/conf:/etc/mysql/conf.d
+    networks:
+      - patada
+    secrets:
+      - mysql_root_password
+
+  nginx:
+    image: nginx:{{ NGINX.VERSION }}
+    depends_on:
+      - traefik
+    networks:
+      - patada
+    volumes:
+      - {{ NGINX.VOLUME_HOST_PATH }}:/usr/share/nginx/html
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ NGINX.RESOURCE_LIMITS.CPU }}"
+          memory: {{ NGINX.RESOURCE_LIMITS.MEM }}
+      labels:
+      - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
+      - 'traefik.enable=true'
+      - 'traefik.frontend.rule=Host:www.{{ NGINX.DOMAIN }}'
+      - 'traefik.frontend.rule=Host:{{ NGINX.DOMAIN }}'
+      - 'traefik.port={{ NGINX.PORT }}'
+      - 'traefik.protocol={{ NGINX.PROTOCOL }}'
+      - 'traefik.backend.loadbalancer.swarm=true'
+  
+  redditbot:
+    image: lordanubis/redditbot:{{ REDDITBOT.VERSION }}
+    networks:
+      - patada
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ REDDITBOT.RESOURCE_LIMITS.CPU }}"
+          memory: {{ REDDITBOT.RESOURCE_LIMITS.MEM }}
+      restart_policy:
+        condition: {{ REDDITBOT.RESTART_POLICY.CONDITION }}
+        delay: {{ REDDITBOT.RESTART_POLICY.DELAY }}
+        max_attempts: {{ REDDITBOT.RESTART_POLICY.MAX_ATTEMPTS }}
+        window: {{ REDDITBOT.RESTART_POLICY.WINDOW }}
+
+  calibre:
+    image: linuxserver/calibre-web:{{ CALIBRE.VERSION }}
+    depends_on:
+      - traefik
+    networks:
+      - patada
+    volumes:
+      - {{ CALIBRE.VOLUME_HOST_PATH }}/books:/books
+      - {{ CALIBRE.VOLUME_HOST_PATH }}/config:/config
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ CALIBRE.RESOURCE_LIMITS.CPU }}"
+          memory: {{ CALIBRE.RESOURCE_LIMITS.MEM }}
+      labels:
+      - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
+      - 'traefik.enable=true'
+      - 'traefik.frontend.rule=Host:{{ CALIBRE.DOMAIN }}'
+      - 'traefik.port={{ CALIBRE.PORT }}'
+      - 'traefik.protocol={{ CALIBRE.PROTOCOL }}'
+      - 'traefik.backend.loadbalancer.swarm=true'
+      
+  redis:
+    image: redis:{{ REDIS.VERSION }}
+    volumes:
+      - {{ REDIS.VOLUME_HOST_PATH }}:/var/lib/redis  
+    networks:
+      - patada
+
+  traefik:
+    image: traefik:{{ TRAEFIK.VERSION }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ TRAEFIK.RESOURCE_LIMITS.CPU }}"
+          memory: {{ TRAEFIK.RESOURCE_LIMITS.MEM }}
+      labels:
+      - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
+      - 'traefik.enable=true'
+      - 'traefik.frontend.rule=Host:{{ TRAEFIK.DOMAIN }}'
+      - 'traefik.port={{ TRAEFIK.PORT }}'
+      - 'traefik.protocol={{ TRAEFIK.PROTOCOL }}'
+      - 'traefik.backend.loadbalancer.swarm=true'
+    ports:
+      - 80:80
+      - 443:443
+      - {{ TRAEFIK.PORT }}:{{ TRAEFIK.PORT }}
+    networks:
+      - patada
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - {{ TRAEFIK.VOLUME_HOST_PATH }}/traefik.toml:/traefik.toml
+      - {{ TRAEFIK.VOLUME_HOST_PATH }}/acme.json:/acme.json
+    environment:
+      - CLOUDFLARE_EMAIL={{ TRAEFIK.CLOUDFLARE_EMAIL }}
+      - CLOUDFLARE_API_KEY={{ TRAEFIK.CLOUDFLARE_API_KEY }}
+      
+  ghost:
+    image: ghost:{{ GHOST.VERSION }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ GHOST.RESOURCE_LIMITS.CPU }}"
+          memory: {{ GHOST.RESOURCE_LIMITS.MEM }}
+      labels:
+      - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
+      - 'traefik.enable=true'
+      - 'traefik.frontend.rule=Host:{{ GHOST.DOMAIN }}'
+      - 'traefik.port={{ GHOST.PORT }}'
+      - 'traefik.protocol={{ GHOST.PROTOCOL }}'
+    depends_on: 
+      - db
+      - traefik
+    environment:
+      # see https://docs.ghost.org/docs/config#section-running-ghost-with-config-env-variables
+      database__client: mysql
+      database__connection__host: db
+      database__connection__user: {{ GHOST.DB_USER }}
+      database__connection__password: {{ GHOST.DB_PASSWORD }}
+      database__connection__database: {{ GHOST.DB_SCHEMA }}
+      url: http://{{ GHOST.DOMAIN }}
+    volumes:
+      - /docker/ghost:/var/lib/ghost/content
+    networks:
+      - patada
+  
+  portainer:
+    image: portainer/portainer:{{ PORTAINER.VERSION }}
+    depends_on:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ PORTAINER.RESOURCE_LIMITS.CPU }}"
+          memory: {{ PORTAINER.RESOURCE_LIMITS.MEM }}
+      labels:
+      - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
+      - 'traefik.enable=true'
+      - 'traefik.frontend.rule=Host:{{ PORTAINER.DOMAIN }}'
+      - 'traefik.port={{ PORTAINER.PORT }}'
+      - 'traefik.protocol={{ PORTAINER.PROTOCOL }}'
+    networks:
+      - patada
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - {{ PORTAINER.VOLUME_HOST_PATH }}:/data
+
+  owncloud:
+    image: owncloud/server:{{ OWNCLOUD.VERSION }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ OWNCLOUD.RESOURCE_LIMITS.CPU }}"
+          memory: {{ OWNCLOUD.RESOURCE_LIMITS.MEM }}
+      labels:
+        - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
+        - 'traefik.enable=true'
+        - 'traefik.frontend.rule=Host:{{ OWNCLOUD.DOMAIN }}'
+        - 'traefik.port={{ OWNCLOUD.PORT }}'
+        - 'traefik.protocol={{ OWNCLOUD.PROTOCOL }}'
+    depends_on:
+      - db
+      - redis
+      - traefik
+    volumes:
+      - {{ OWNCLOUD.VOLUME_HOST_PATH }}/data:/mnt/data
+    environment:
+      - OWNCLOUD_DOMAIN={{ OWNCLOUD.DOMAIN }}
+      - OWNCLOUD_VERSION={{ OWNCLOUD.VERSION }}
+      - OWNCLOUD_DB_TYPE=mysql
+      - OWNCLOUD_DB_NAME={{ OWNCLOUD.DB_SCHEMA }}
+      - OWNCLOUD_DB_USERNAME={{ OWNCLOUD.DB_USER }}
+      - OWNCLOUD_DB_PASSWORD={{ OWNCLOUD.DB_PASSWORD }} #owncloud doesn't support secret files yet, keep checking for support and change this to a sec!
+      - OWNCLOUD_DB_HOST=db
+      - OWNCLOUD_REDIS_ENABLED={{ OWNCLOUD.ENABLE_REDIS }}
+      - OWNCLOUD_REDIS_HOST=redis
+      - OWNCLOUD_ADMIN_USERNAME={{ OWNCLOUD.ADMIN_USERNAME }}
+      - OWNCLOUD_ADMIN_PASSWORD={{ OWNCLOUD.ADMIN_PASSWORD }}
+    healthcheck:
+      test: ["CMD", "/usr/bin/healthcheck"]
+      interval: {{ OWNCLOUD.HEALTHCHECK.INTERVAL }}
+      timeout: {{ OWNCLOUD.HEALTHCHECK.TIMEOUT }}
+      retries: {{ OWNCLOUD.HEALTHCHECK.RETRIES }}
+    networks:
+      - patada
+
+  bookstack:
+    image: solidnerd/bookstack:{{ BOOKSTACK.VERSION }}
+    depends_on:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ BOOKSTACK.RESOURCE_LIMITS.CPU }}"
+          memory: {{ BOOKSTACK.RESOURCE_LIMITS.MEM }}
+      labels:
+        - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
+        - 'traefik.enable=true'
+        - 'traefik.frontend.rule=Host:{{ BOOKSTACK.DOMAIN }}'
+        - 'traefik.port={{ BOOKSTACK.PORT }}'
+        - 'traefik.protocol={{ BOOKSTACK.PROTOCOL }}'
+    environment:
+      - DB_HOST=db:3306
+      - DB_DATABASE={{ BOOKSTACK.DB_SCHEMA }}
+      - DB_USER={{ BOOKSTACK.DB_USER }}
+      - DB_PASSWORD={{ BOOKSTACK.DB_PASSWORD }}
+    volumes:
+      - {{ BOOKSTACK.VOLUME_HOST_PATH }}/uploads:/var/www/bookstack/public/uploads
+      - {{ BOOKSTACK.VOLUME_HOST_PATH }}/storage:/var/www/bookstack/public/storage
+    networks:
+      - patada
+
+secrets:
+  mysql_root_password:
+    file: /docker/mariadb/secrets/root_password.txt
+  owncloud_db_root_password:
+    file: /docker/owncloud/secrets/db_root_password.txt
+  
+networks:
+  patada:
+    name: {{ DOCKER_NETWORK_NAME }}
+    ipam:
+      config:
+        - subnet: {{ DOCKER_NETWORK_SUBNET }}
+

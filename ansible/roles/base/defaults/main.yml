@@ -1,0 +1,10 @@
+---
+
+base_packages:
+  - wget
+  - jq
+  - iotop
+  - nano
+  - python-pip
+  - python-dateutil
+  - vim

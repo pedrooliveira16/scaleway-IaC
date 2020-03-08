@@ -1,2 +1,2 @@
-# scaleway-IaC
-My personal's server provisioning code
+# terraform-scaleway
+Terraform for the scaleway environment

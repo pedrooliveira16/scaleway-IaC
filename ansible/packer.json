@@ -1,0 +1,38 @@
+{
+  "variables": {
+    "scaleway_org_id": "", 
+    "scaleway_api_token": "",
+    "base_image": "0f44b130-2bc7-4f82-993e-de9d1042c56e"
+  },
+  "builders": [
+    {
+      "type": "scaleway",
+      "organization_id": "{{ user `scaleway_org_id` }}",
+      "api_token": "{{ user `scaleway_api_token` }}",
+      "image": "{{ user `base_image` }}",
+      "region": "par1",
+      "commercial_type": "DEV1-S",
+      "ssh_username": "root",
+      "ssh_private_key_file": "/home/iac/id_rsa"
+    }
+],
+"provisioners": [
+  {
+    "type": "shell",
+    "inline": ["yum install -y ansible"]
+  },
+  {
+    "type": "file",
+    "source": "/home/iac/ansible",
+    "destination": "/tmp/ansible"
+  },
+  {
+    "type": "ansible-local",
+    "playbook_dir": "../ansible/",
+    "playbook_file": "playbook.yml",
+    "extra_arguments": [ "--extra-vars @/tmp/ansible/vars/secrets.yml", "--vault-password-file=/tmp/ansible/vault_password.txt"],
+    "clean_staging_directory": true
+  }
+]
+
+}

@@ -1,0 +1,45 @@
+---
+- name: Install docker dependencies
+  yum:
+    name: "{{ docker_dependencies }}"
+    state: latest
+
+- name: Add docker repo to Yum
+  get_url:
+    url: "{{ docker_yum_repo_url }}"
+    dest: '/etc/yum.repos.d/docker-{{ docker_edition }}.repo'
+
+- name: Install docker
+  yum:
+    name: "{{ docker_packages }}"
+    state: latest
+
+- name: Enable docker to start at boot
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Ensure docker directory exists
+  file:
+    path: /docker
+    owner: root
+    group: root
+    state: directory
+
+- name: Generate docker-compose.yml
+  template: 
+    src: templates/docker-compose.j2
+    dest: /docker/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install docker python module
+  pip:
+    name: docker
+    
+- name: Init docker swarm 
+  docker_swarm:
+    state: present
+  
