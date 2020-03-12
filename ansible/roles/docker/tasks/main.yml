@@ -37,9 +37,18 @@
 
 - name: Install docker python module
   pip:
-    name: docker
-    
-- name: Init docker swarm 
+    name: "{{ pip_modules }}"
+
+- name: Restore data from S3
+  shell: s3cmd get -f $(s3cmd ls -l s3://{{ S3.BACKUP_BUCKET }} | sort | tail -n1 | cut -d ' ' -f 10) - | tar -C {{ DOCKER_DIRECTORY }} -xvzf -
+
+- name: Init docker swarm
   docker_swarm:
     state: present
-  
+
+- name: Deploy docker stack
+  docker_stack:
+    state: present
+    name: apps
+    compose:
+      - "{{ DOCKER_DIRECTORY }}/docker-compose.yml"

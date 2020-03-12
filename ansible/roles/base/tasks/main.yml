@@ -8,7 +8,7 @@
     yum:
       name: '*'
       state: latest
-    
+
   - name: Install base packages
     yum:
       name: "{{ base_packages }}"
@@ -17,8 +17,15 @@
   - name: Install s3cmd
     pip:
       name: s3cmd
-  
+
   - name: Create the s3cmd configuration file
     template:
       src: templates/s3cfg.j2
       dest: /root/.s3cfg
+
+  - name: Create daily S3 backup cronjob
+    cron:
+      name: Backup data to S3
+      minute: "30"
+      hour: "0"
+      job: tar -cP -C {{ DOCKER_DIRECTORY }} . | gzip -9 | s3cmd put - s3://{{ S3.BACKUP_BUCKET }}/docker_files-$(date +\%Y\%m\%d).tar.gz --no-progress

@@ -1,6 +1,6 @@
 version: "3.6"
 services:
-  db: 
+  db:
     image: mariadb:{{ MARIADB.VERSION }}
     deploy:
       resources:
@@ -38,7 +38,7 @@ services:
       - 'traefik.port={{ NGINX.PORT }}'
       - 'traefik.protocol={{ NGINX.PROTOCOL }}'
       - 'traefik.backend.loadbalancer.swarm=true'
-  
+
   redditbot:
     image: lordanubis/redditbot:{{ REDDITBOT.VERSION }}
     networks:
@@ -75,7 +75,7 @@ services:
       - 'traefik.port={{ CALIBRE.PORT }}'
       - 'traefik.protocol={{ CALIBRE.PROTOCOL }}'
       - 'traefik.backend.loadbalancer.swarm=true'
-      
+
   redis:
     image: redis:{{ REDIS.VERSION }}
     volumes:
@@ -110,7 +110,7 @@ services:
     environment:
       - CLOUDFLARE_EMAIL={{ TRAEFIK.CLOUDFLARE_EMAIL }}
       - CLOUDFLARE_API_KEY={{ TRAEFIK.CLOUDFLARE_API_KEY }}
-      
+
   ghost:
     image: ghost:{{ GHOST.VERSION }}
     deploy:
@@ -139,7 +139,7 @@ services:
       - /docker/ghost:/var/lib/ghost/content
     networks:
       - patada
-  
+
   portainer:
     image: portainer/portainer:{{ PORTAINER.VERSION }}
     depends_on:
@@ -161,44 +161,33 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - {{ PORTAINER.VOLUME_HOST_PATH }}:/data
 
-  owncloud:
-    image: owncloud/server:{{ OWNCLOUD.VERSION }}
+  nextcloud:
+    image: nextcloud:{{ NEXTCLOUD.VERSION }}
+    environment:
+      - MYSQL_HOST={{ NEXTCLOUD.DB_HOST }}
+      - MYSQL_DATABASE={{ NEXTCLOUD.DB_SCHEMA }}
+      - MYSQL_USER={{ NEXTCLOUD.DB_USER }}
+      - MYSQL_PASSWORD={{ NEXTCLOUD.DB_PASSWORD }}
+      - REDIS_HOST={{ NEXTCLOUD.REDIS_HOST }}
     deploy:
       resources:
         limits:
-          cpus: "{{ OWNCLOUD.RESOURCE_LIMITS.CPU }}"
-          memory: {{ OWNCLOUD.RESOURCE_LIMITS.MEM }}
+          cpus: "{{ NEXTCLOUD.RESOURCE_LIMITS.CPU }}"
+          memory: {{ NEXTCLOUD.RESOURCE_LIMITS.MEM }}
       labels:
         - 'traefik.docker.network={{ DOCKER_NETWORK_NAME }}'
         - 'traefik.enable=true'
-        - 'traefik.frontend.rule=Host:{{ OWNCLOUD.DOMAIN }}'
-        - 'traefik.port={{ OWNCLOUD.PORT }}'
-        - 'traefik.protocol={{ OWNCLOUD.PROTOCOL }}'
+        - 'traefik.frontend.rule=Host:{{ NEXTCLOUD.DOMAIN }}'
+        - 'traefik.port={{ NEXTCLOUD.PORT }}'
+        - 'traefik.protocol={{ NEXTCLOUD.PROTOCOL }}'
     depends_on:
       - db
       - redis
       - traefik
-    volumes:
-      - {{ OWNCLOUD.VOLUME_HOST_PATH }}/data:/mnt/data
-    environment:
-      - OWNCLOUD_DOMAIN={{ OWNCLOUD.DOMAIN }}
-      - OWNCLOUD_VERSION={{ OWNCLOUD.VERSION }}
-      - OWNCLOUD_DB_TYPE=mysql
-      - OWNCLOUD_DB_NAME={{ OWNCLOUD.DB_SCHEMA }}
-      - OWNCLOUD_DB_USERNAME={{ OWNCLOUD.DB_USER }}
-      - OWNCLOUD_DB_PASSWORD={{ OWNCLOUD.DB_PASSWORD }} #owncloud doesn't support secret files yet, keep checking for support and change this to a sec!
-      - OWNCLOUD_DB_HOST=db
-      - OWNCLOUD_REDIS_ENABLED={{ OWNCLOUD.ENABLE_REDIS }}
-      - OWNCLOUD_REDIS_HOST=redis
-      - OWNCLOUD_ADMIN_USERNAME={{ OWNCLOUD.ADMIN_USERNAME }}
-      - OWNCLOUD_ADMIN_PASSWORD={{ OWNCLOUD.ADMIN_PASSWORD }}
-    healthcheck:
-      test: ["CMD", "/usr/bin/healthcheck"]
-      interval: {{ OWNCLOUD.HEALTHCHECK.INTERVAL }}
-      timeout: {{ OWNCLOUD.HEALTHCHECK.TIMEOUT }}
-      retries: {{ OWNCLOUD.HEALTHCHECK.RETRIES }}
     networks:
       - patada
+    volumes:
+      - {{ NEXTCLOUD.VOLUME_HOST_PATH }}:/var/www/html
 
   bookstack:
     image: solidnerd/bookstack:{{ BOOKSTACK.VERSION }}
