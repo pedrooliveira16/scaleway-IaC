@@ -3,10 +3,11 @@ resource "scaleway_instance_ip" "ip" {}
 resource "scaleway_instance_server" "patada" {
   name          = var.server_name
   ip_id         = scaleway_instance_ip.ip.id
-  image         = var.image_id  
+  image         = var.image_id 
   type          = var.instance_type
   enable_ipv6   = true
   state         = "started"
+  security_group_id= scaleway_instance_security_group.sg.id
 
   tags = [
       var.server_name
