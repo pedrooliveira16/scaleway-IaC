@@ -13,7 +13,7 @@ resource "scaleway_instance_server" "patada" {
   ]
 
   root_volume {
-    delete_on_termination = false
+    delete_on_termination = true
     size_in_gb = var.volume_size
   }
 }

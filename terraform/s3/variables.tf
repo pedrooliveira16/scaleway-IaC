@@ -11,25 +11,17 @@ variable "organization_id" {
 }
 
 variable "region" {
-    default= "fr-par"
+    default= "nl-ams"
 }
 
 variable "zone" {
-    default = "fr-par-1"
+    default = "nl-ams-1"
 }
 
-variable "volume_size" {
-    default= "20"
+variable "backup_bucket_name" {
+    default = "patada-backups"
 }
 
-variable "image_id" {
-    default = "0e9da4ee-3f63-422f-8ccf-333d94371fb5"
-}
-
-variable "instance_type" {
-    default = "DEV1-S"
-}
-
-variable "server_name" {
-    default = "monokuma.pt"
+variable "terraform_state_bucket_name" {
+    default = "patada-terraform-state"
 }

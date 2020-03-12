@@ -1,10 +1,14 @@
 FROM ubuntu:latest
 
-# Install Packer
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
-    ansible
+    ansible \
+    git
+
+# Install Packer
+
 RUN wget https://releases.hashicorp.com/packer/1.5.4/packer_1.5.4_linux_amd64.zip -O /tmp/packer.zip
 RUN unzip /tmp/packer.zip -d /tmp
 RUN mv /tmp/packer /usr/bin

@@ -3,13 +3,17 @@
 docker_yum_repo_url: https://download.docker.com/linux/centos/docker-ce.repo
 
 docker_packages:
-  - docker-ce 
-  - docker-ce-cli 
+  - docker-ce
+  - docker-ce-cli
   - containerd.io
 
 docker_dependencies:
   - yum-utils
   - device-mapper-persistent-data
   - lvm2
+
+pip_modules:
+  - docker
+  - jsondiff
 
 docker_edition: ce

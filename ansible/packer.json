@@ -1,8 +1,8 @@
 {
   "variables": {
-    "scaleway_org_id": "", 
+    "scaleway_org_id": "",
     "scaleway_api_token": "",
-    "base_image": "0f44b130-2bc7-4f82-993e-de9d1042c56e"
+    "base_image": "05794ee5-c6d2-4d69-86dd-f1fc9032921d"
   },
   "builders": [
     {
@@ -10,7 +10,7 @@
       "organization_id": "{{ user `scaleway_org_id` }}",
       "api_token": "{{ user `scaleway_api_token` }}",
       "image": "{{ user `base_image` }}",
-      "region": "par1",
+      "region": "ams1",
       "commercial_type": "DEV1-S",
       "ssh_username": "root",
       "ssh_private_key_file": "/home/iac/id_rsa"
